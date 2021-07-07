@@ -1,0 +1,20 @@
+
+name: Run Kube-linter on the needed .yaml
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Scan valid yaml with kube-linter
+        uses: github-actions-for-cdci/kube-linter-action@main
+        with:
+          directory: sample/valid-yaml
+          config: sample/.kube-linter-config.yaml
