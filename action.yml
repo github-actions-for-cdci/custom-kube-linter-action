@@ -1,0 +1,52 @@
+name: 'kube-linter'
+description: 'Scan directory or file with kube-linter'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+inputs:
+  directory:
+    description: 'Directory or file to scan'
+    required: true
+  config:
+    description: 'Path to config file'
+    required: false
+  output-file:
+    description: 'Filename to store output.  Default "kubelinter.log"'
+    required: false
+    default: 'kubelinter.log'
+runs:
+  using: "composite"
+  steps:
+    - name: Download the latest kube-linter
+      run: |
+        set -euo pipefail
+        case "${{ runner.os }}" in
+          macOS)   OS=darwin ;;
+          Windows) OS=windows ;;
+          *)       OS=linux ;;
+        esac
+        RELEASE_INFO=$(curl --silent --show-error --fail https://api.github.com/repos/stackrox/kube-linter/releases/latest)
+        RELEASE_NAME=$(echo "${RELEASE_INFO}" | jq --raw-output ".name")
+        LOCATION=$(echo "${RELEASE_INFO}" \
+          | jq --raw-output ".assets[].browser_download_url" \
+          | grep --fixed-strings kube-linter-${OS}.tar.gz)
+        TARGET=kube-linter-${OS}-${RELEASE_NAME}.tar.gz
+        # Skip downloading release if downloaded already, e.g. when the action is used multiple times.
+        if [ ! -e $TARGET ]; then
+          curl --silent --show-error --fail --location --output $TARGET "$LOCATION"
+          tar -xf $TARGET
+        fi
+      shell: bash
+    - name: Lint files
+      run: |
+        set -u
+        set +e
+        if [ -z ${{ inputs.config }} ]; then
+          CONFIG=""
+        else
+          CONFIG="--config ${{ inputs.config }}"
+        fi
+        ./kube-linter $CONFIG lint --format=sarif ${{ inputs.directory }} 2>&1 | tee -a kubelinter.log
+        curl -s -L -o kubelinter2sarif.js https://raw.githubusercontent.com/jduimovich/kubelinter-sarif-poc/main/kubelinter2sarif.js
+        node kubelinter2sarif.js kubelinter.log ${{ inputs.outputFile }}
+        exit ${PIPESTATUS[0]}
