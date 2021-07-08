@@ -46,11 +46,6 @@ runs:
         else
           CONFIG="--config ${{ inputs.config }}"
         fi
-        ./kube-linter $CONFIG lint --format=sarif ${{ inputs.directory }} 2>&1 | tee -a kube.log
+        ./kube-linter $CONFIG lint --format=sarif ${{ inputs.directory }} | tee -a kube.log
         pwd
-        cat kube.log
-        var=`cat kube.log`
-        var2=${var%Error:*}
-        echo "$var2" > ${{ inputs.output-file }}
-        exit ${PIPESTATUS[0]}
       shell: bash
