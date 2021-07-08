@@ -46,6 +46,6 @@ runs:
         else
           CONFIG="--config ${{ inputs.config }}"
         fi
-        ./kube-linter $CONFIG lint --format=sarif ${{ inputs.directory }} | tee -a kube.log
+        ./kube-linter $CONFIG lint --format=sarif ${{ inputs.directory }} | tee -a output.sarif
         pwd
       shell: bash
